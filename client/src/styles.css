@@ -23,4 +23,14 @@ button { border:0; border-radius:12px; padding:12px 14px; background:#5865d8; co
 .actions a { text-decoration:none; font-weight:700; color:#4b58c7; }
 .ghost { background:#eef0f5; color:#333b4f; }.danger { background:#fff0f0; color:#b42318; }
 .empty { color:#98a2b3; }
+.error { padding:14px; border-radius:12px; background:#fff0f0; color:#b42318; }
+button:disabled { opacity:.6; cursor:wait; }
+.grid > *, .card > * { min-width:0; }
+.card h3, .card p, .card small { overflow-wrap:anywhere; }
+.stats article { gap:8px; flex-wrap:wrap; }
+.badge.applied { background:#eaf2ff; color:#2454a6; }
+.badge.interview { background:#fff4dc; color:#805500; }
+.badge.offer { background:#e8f7ef; color:#226544; }
+.badge.rejected { background:#fff0f0; color:#b42318; }
+@media(max-width:480px){.shell{padding:24px 16px 48px}.panel{padding:18px}.card{flex-direction:column}}
 @media(max-width:800px){header{align-items:stretch;flex-direction:column}.search{max-width:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}h1{font-size:42px}}

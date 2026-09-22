@@ -11,5 +11,6 @@ CREATE TABLE IF NOT EXISTS applications (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO applications (company, position, status, link, notes) VALUES
-('Demo Company', 'Junior Frontend Developer', 'Applied', 'https://example.com', 'Portfolio demo entry');
+-- Optional demo entry: uncomment and execute once if desired.
+-- INSERT INTO applications (company, position, status, link, notes) VALUES
+-- ('Demo Company', 'Junior Frontend Developer', 'Applied', 'https://example.com', 'Portfolio demo entry');
