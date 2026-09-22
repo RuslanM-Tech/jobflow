@@ -8,8 +8,6 @@ export default defineConfig({
     // Read PORT in JavaScript so npm start works on Windows and Linux.
     port: Number(process.env.PORT) || 4173,
     strictPort: true,
-    allowedHosts: process.env.RAILWAY_PUBLIC_DOMAIN
-      ? [process.env.RAILWAY_PUBLIC_DOMAIN]
-      : []
+    allowedHosts: true
   }
 });
