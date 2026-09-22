@@ -1,0 +1,26 @@
+:root { font-family: Inter, system-ui, sans-serif; color:#172033; background:#f4f6fa; }
+* { box-sizing:border-box; } body { margin:0; }
+.shell { max-width:1180px; margin:auto; padding:48px 24px 80px; }
+header { display:flex; justify-content:space-between; gap:24px; align-items:end; }
+h1 { margin:4px 0; font-size:52px; letter-spacing:-2px; } h2 { margin-top:0; }
+.eyebrow { font-size:12px; font-weight:800; letter-spacing:2px; color:#5965d8; }
+.lead { color:#667085; margin:0; }
+.search,input,select,textarea { width:100%; border:1px solid #d9dfeb; border-radius:12px; padding:13px 14px; background:white; font:inherit; }
+.search { max-width:340px; }
+.stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:30px 0; }
+.stats article,.panel { background:white; border:1px solid #e5e9f2; border-radius:18px; box-shadow:0 8px 30px rgba(30,43,75,.05); }
+.stats article { padding:18px; display:flex; justify-content:space-between; }
+.stats span { color:#667085; } .stats strong { font-size:22px; }
+.grid { display:grid; grid-template-columns:340px 1fr; gap:20px; }
+.panel { padding:24px; }
+.form { display:flex; flex-direction:column; gap:12px; align-self:start; }
+textarea { min-height:110px; resize:vertical; }
+button { border:0; border-radius:12px; padding:12px 14px; background:#5865d8; color:white; cursor:pointer; font-weight:700; }
+.card { display:flex; justify-content:space-between; gap:20px; padding:18px 0; border-bottom:1px solid #eef0f5; }
+.card h3 { margin:8px 0 2px; }.card p,.card small { color:#667085; }
+.badge { font-size:12px; font-weight:800; background:#eef0ff; color:#4b58c7; padding:5px 9px; border-radius:999px; }
+.actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.actions a { text-decoration:none; font-weight:700; color:#4b58c7; }
+.ghost { background:#eef0f5; color:#333b4f; }.danger { background:#fff0f0; color:#b42318; }
+.empty { color:#98a2b3; }
+@media(max-width:800px){header{align-items:stretch;flex-direction:column}.search{max-width:none}.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}h1{font-size:42px}}
