@@ -1,147 +1,124 @@
-import React, { useEffect, useMemo, useState } from "react";
-
-const API = "http://localhost:3001/api/applications";
-const initialForm = { company: "", position: "", status: "Wishlist", link: "", notes: "" };
-const statuses = ["Wishlist", "Applied", "Interview", "Offer", "Rejected"];
-
-async function request(url, options) {
-  const response = await fetch(url, options);
-  if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new Error(body.message || `Request failed (${response.status}).`);
-  }
-  return response.status === 204 ? null : response.json();
-}
+import { useEffect, useMemo, useRef, useState } from "react";
+import Header from "./components/Header";
+import Stats from "./components/Stats";
+import ApplicationForm from "./components/ApplicationForm";
+import ApplicationList from "./components/ApplicationList";
+import { applicationsApi } from "./services/api";
+import { initialForm } from "./applicationOptions";
 
 export default function App() {
   const [items, setItems] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("newest");
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const companyInput = useRef(null);
 
-  const load = async () => {
+  async function load() {
     setLoading(true);
+    setLoadError("");
     try {
-      setItems(await request(API));
+      setItems(await applicationsApi.list());
+    } catch (err) {
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { load().catch(err => setError(err.message)); }, []);
+  }
+  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 4500);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   const filtered = useMemo(() => {
-    const q = query.toLowerCase();
-    return items.filter(x => `${x.company} ${x.position}`.toLowerCase().includes(q));
-  }, [items, query]);
-
-  const save = async (e) => {
-    e.preventDefault();
-    setError("");
-    setBusy(true);
-    const url = editingId ? `${API}/${editingId}` : API;
-    try {
-      await request(url, {
-        method: editingId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form)
-      });
-      setForm(initialForm);
-      setEditingId(null);
-      await load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const edit = (item) => {
-    setEditingId(item.id);
-    setForm({
-      company: item.company,
-      position: item.position,
-      status: item.status,
-      link: item.link || "",
-      notes: item.notes || ""
+    const search = query.trim().toLowerCase();
+    return items.filter(item =>
+      (statusFilter === "All" || item.status === statusFilter) &&
+      `${item.company} ${item.position}`.toLowerCase().includes(search)
+    ).sort((a, b) => {
+      const newest = new Date(b.created_at) - new Date(a.created_at) || b.id - a.id;
+      if (sortOrder === "company") return a.company.localeCompare(b.company) || newest;
+      return sortOrder === "oldest" ? -newest : newest;
     });
-  };
+  }, [items, query, statusFilter, sortOrder]);
 
-  const remove = async (id) => {
+  function resetForm() {
+    setForm(initialForm);
+    setEditingId(null);
     setError("");
+  }
+  async function save(event) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
     setBusy(true);
     try {
-      await request(`${API}/${id}`, { method: "DELETE" });
-      if (editingId === id) {
-        setForm(initialForm);
-        setEditingId(null);
-      }
-      await load();
+      const saved = editingId !== null
+        ? await applicationsApi.update(editingId, form)
+        : await applicationsApi.create(form);
+      setItems(current => editingId !== null
+        ? current.map(item => item.id === editingId ? saved : item)
+        : [saved, ...current]);
+      setNotice(editingId !== null ? "Application updated successfully." : "Application added successfully.");
+      resetForm();
     } catch (err) {
       setError(err.message);
     } finally {
       setBusy(false);
     }
-  };
-
-  const count = (status) => items.filter(x => x.status === status).length;
-
+  }
+  function edit(item) {
+    setError("");
+    setEditingId(item.id);
+    setForm({ company: item.company, position: item.position, status: item.status,
+      link: item.link || "", notes: item.notes || "" });
+    companyInput.current?.focus();
+    companyInput.current?.scrollIntoView({ block: "center" });
+  }
+  async function remove(item) {
+    if (!window.confirm(`Delete the application for ${item.position} at ${item.company}? This cannot be undone.`)) return;
+    setError("");
+    setNotice("");
+    setBusy(true);
+    try {
+      await applicationsApi.remove(item.id);
+      setItems(current => current.filter(application => application.id !== item.id));
+      if (editingId === item.id) resetForm();
+      setNotice("Application deleted.");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function clearFilters() {
+    setQuery("");
+    setStatusFilter("All");
+  }
   return (
     <main className="shell">
-      <header>
-        <div>
-          <p className="eyebrow">PORTFOLIO PROJECT</p>
-          <h1>JobFlow</h1>
-          <p className="lead">Track applications from wishlist to offer.</p>
-        </div>
-        <input className="search" aria-label="Search company or role" placeholder="Search company or role…" value={query} onChange={e => setQuery(e.target.value)} />
-      </header>
-
+      <Header query={query} onSearch={setQuery} />
+      <div role="status">{notice && <p className="success">{notice}</p>}</div>
       {error && <p className="error" role="alert">{error}</p>}
-
-      <section className="stats">
-        {statuses.map(s => <article key={s}><span>{s}</span><strong>{count(s)}</strong></article>)}
-      </section>
-
-      <section className="grid">
-        <form className="panel form" onSubmit={save}>
-          <h2>{editingId ? "Edit application" : "New application"}</h2>
-          <input aria-label="Company" placeholder="Company" required maxLength={120} value={form.company} onChange={e => setForm({...form, company:e.target.value})}/>
-          <input aria-label="Position" placeholder="Position" required maxLength={120} value={form.position} onChange={e => setForm({...form, position:e.target.value})}/>
-          <select aria-label="Status" value={form.status} onChange={e => setForm({...form, status:e.target.value})}>
-            {statuses.map(s => <option key={s}>{s}</option>)}
-          </select>
-          <input aria-label="Job link" placeholder="Job link" type="url" maxLength={255} value={form.link} onChange={e => setForm({...form, link:e.target.value})}/>
-          <textarea aria-label="Notes" placeholder="Notes" value={form.notes} onChange={e => setForm({...form, notes:e.target.value})}/>
-          <button disabled={busy}>{busy ? "Saving…" : editingId ? "Save changes" : "Add application"}</button>
-          {editingId && <button type="button" className="ghost" disabled={busy} onClick={() => { setForm(initialForm); setEditingId(null); }}>Cancel editing</button>}
-        </form>
-
-        <section className="panel">
-          <h2>Applications</h2>
-          <div className="list">
-            {filtered.map(item => (
-              <article className="card" key={item.id}>
-                <div>
-                  <span className={`badge ${item.status.toLowerCase()}`}>{item.status}</span>
-                  <h3>{item.position}</h3>
-                  <p>{item.company}</p>
-                  {item.notes && <small>{item.notes}</small>}
-                </div>
-                <div className="actions">
-                  {/^https?:\/\//i.test(item.link || "") && <a href={item.link} target="_blank" rel="noopener noreferrer">Open</a>}
-                  <button className="ghost" disabled={busy} onClick={() => edit(item)}>Edit</button>
-                  <button className="danger" disabled={busy} onClick={() => remove(item.id)}>Delete</button>
-                </div>
-              </article>
-            ))}
-            {loading && <p role="status">Loading applications…</p>}
-            {!loading && !error && !filtered.length && <p className="empty">No applications found.</p>}
-          </div>
-        </section>
-      </section>
+      <Stats items={items} loading={loading || Boolean(loadError)} />
+      <div className="grid">
+        <ApplicationForm form={form} setForm={setForm} editing={editingId !== null}
+          busy={busy || loading || Boolean(loadError)} onSave={save} onCancel={resetForm} companyInput={companyInput} />
+        <ApplicationList items={filtered} total={items.length} query={query} statusFilter={statusFilter}
+          onFilter={setStatusFilter} sortOrder={sortOrder} onSort={setSortOrder}
+          loading={loading} loadError={loadError} onRetry={load} busy={busy}
+          onEdit={edit} onDelete={remove} onClear={clearFilters}
+          onCreate={() => companyInput.current?.focus()} />
+      </div>
+      <footer className="site-footer">JobFlow · A little structure for your next big step.</footer>
     </main>
   );
 }
