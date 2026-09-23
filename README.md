@@ -2,162 +2,96 @@
 
 A full-stack job application tracker built with React, Express.js and MySQL.
 
+**[Live Demo](https://jobflow-frontend-production.up.railway.app)** · [Backend API](https://jobflow-production-956a.up.railway.app/api/health)
+
+**Built with:** React · Vite · Node.js · Express.js · MySQL · Railway
+
+The demo uses a shared application list without authentication.
+
+## Screenshots
+
+### Dashboard
+
+![JobFlow Dashboard](docs/jobflow-dashboard.png)
+
+### Application overview
+
+![JobFlow Applications](docs/jobflow-application.png)
+
 ## Features
+
 - Create, edit and delete job applications
 - Track application status
 - Search by company or position
-- Filter by status and sort by newest, oldest, or company name
+- Filter by status
+- Sort by newest, oldest or company
 - Dashboard counters
-- Confirm before deleting and receive feedback after saving
-- Helpful empty states and retry after loading errors
-- REST API with MySQL persistence
+- Persistent MySQL storage
 - Responsive UI
+- Success and error feedback
 
 ## Tech Stack
-- React + Vite
-- Express.js
-- MySQL
-- HTML / CSS / JavaScript
+
+| Layer | Technologies |
+| --- | --- |
+| Frontend | React, Vite, JavaScript, CSS |
+| Backend | Node.js, Express.js, REST API |
+| Database | MySQL |
+| Deployment | Railway |
+
+## Architecture
+
+```text
+React frontend
+       ↓
+Express REST API
+       ↓
+     MySQL
+```
+
+The frontend handles UI state, search, filters and sorting. The API validates
+requests and stores application data in MySQL.
+
+## API
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/health` | Check API health |
+| GET | `/api/applications` | List applications |
+| POST | `/api/applications` | Create an application |
+| PUT | `/api/applications/:id` | Update an application |
+| DELETE | `/api/applications/:id` | Delete an application |
+
+POST and PUT accept JSON with `company`, `position`, `status`, `link` and `notes`.
+Company and position are required. Supported statuses: Wishlist, Applied,
+Interview, Offer and Rejected.
 
 ## Run locally
 
-Use Node.js 24 LTS, npm, and a running MySQL server. Run the commands from
-this project folder (locally: `C:\Users\ruslan\projects\portfolio\jobflow`).
+Prerequisites: Node.js 24, npm and a running MySQL server.
 
-### Database
+1. Copy `server/.env.example` to `server/.env` and configure your local MySQL
+   connection. Use `DB_NAME=jobflow` and `PORT=3001`. Keep credentials in `.env`
+   and do not commit it.
+2. Execute `server/schema.sql` in MySQL Workbench to create the database and table.
+3. Start the backend from the project root:
 
-1. Open MySQL Workbench and connect to your local MySQL server.
-2. Choose **File > Open SQL Script** and open `server/schema.sql`.
-3. Execute the entire script with the lightning button (or Ctrl+Shift+Enter).
+   ```sh
+   cd server
+   npm install
+   npm run dev
+   ```
 
-The script creates the `jobflow` database and the `applications` table if they
-do not already exist. It does not drop tables or delete data, and it does not
-alter an existing table. The optional demo insert is commented out.
+4. Open a second terminal at the project root and start the frontend:
 
-The table contains `id`, `company`, `position`, `status`, `link`, `notes`, and
-`created_at`. Supported statuses: Wishlist, Applied, Interview, Offer, Rejected.
+   ```sh
+   cd client
+   npm install
+   npm run dev
+   ```
 
-### Backend
+Open [localhost:5173](http://localhost:5173). The API runs at
+[localhost:3001](http://localhost:3001/api/health).
 
-In a PowerShell terminal:
-
-```powershell
-cd server
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-npm ci
-npm run dev
-```
-
-Before starting, edit `server/.env` with your local MySQL credentials:
-
-```dotenv
-PORT=3001
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=jobflow
-```
-
-Set `DB_PASSWORD` to your actual MySQL password. An empty value only works if
-that account has no password. Quote values containing `#`, for example
-`DB_PASSWORD="your#password"`. Never commit `.env`; it and `node_modules` are
-ignored by Git. Restart the backend after editing `.env` (Ctrl+C, then
-`npm run dev`). The configuration is loaded relative to the server files.
-
-### Frontend
-
-In a second terminal, starting from the project folder:
-
-```powershell
-cd client
-npm ci
-npm run dev
-```
-
-The API runs on `http://localhost:3001` and the frontend on `http://localhost:5173`.
-
-### Check the API
-
-```powershell
-Invoke-RestMethod http://localhost:3001/api/health
-Invoke-RestMethod http://localhost:3001/api/applications
-```
-
-Health returns `{"status":"ok"}` and checks that Express is running. The
-applications endpoint also requires a working database and returns a JSON array.
-
-| Method | Endpoint | Success |
-| --- | --- | --- |
-| GET | `/api/health` | 200 |
-| GET | `/api/applications` | 200 |
-| POST | `/api/applications` | 201 |
-| PUT | `/api/applications/:id` | 200 |
-| DELETE | `/api/applications/:id` | 204 |
-
-POST and PUT accept JSON with `company`, `position`, `status`, `link`, and `notes`.
-Company and position are required (maximum 120 characters each); link is optional
-and must be an HTTP/HTTPS URL (maximum 255 characters). Invalid input returns 400,
-missing records return 404, and unexpected server/database errors return 500 with
-a JSON message. Database error codes are logged in the backend terminal.
-
-If MySQL reports `ER_ACCESS_DENIED_ERROR`, check the user/password in `.env`.
-For `ER_BAD_DB_ERROR` or `ER_NO_SUCH_TABLE`, run `server/schema.sql` in Workbench.
-For `ECONNREFUSED`, check that MySQL is running. If port 3001 is already in use,
-stop the old backend terminal before starting this copy.
-
-### Production build
-
-```powershell
-cd client
-npm run build
-```
-
-This creates `client/dist`. The API service in `client/src/services/api.js` defaults
-to `http://localhost:3001`. Set `VITE_API_URL` in `client/.env` to use a different
-backend origin, then restart Vite or rebuild. Only use public configuration in
-Vite environment variables; they are included in the frontend bundle.
-This portfolio demo has no authentication;
-all connected clients use the same application list.
-
-## Frontend structure
-
-```text
-client/src/
-  components/
-    Header.jsx
-    Stats.jsx
-    ApplicationForm.jsx
-    ApplicationList.jsx
-    ApplicationCard.jsx
-  services/api.js
-  applicationOptions.js
-  App.jsx
-  styles.css
-```
-
-`App.jsx` owns the shared React state and coordinates CRUD actions. Components
-receive data and callbacks through props. The API service handles HTTP requests
-and errors. Search, filters and sorting run locally on the loaded applications;
-statistics always describe the complete list. Newest/oldest sorting uses
-`created_at`, with the ID as a tie breaker. No additional libraries are required.
-
-The existing schema remains unchanged. Location and application date are possible
-future additions: an application date would be a nullable SQL DATE distinct from
-the record's creation timestamp, and location an optional text field. Neither is
-needed for the current dashboard, so existing databases need no migration.
-
-## Manual verification
-
-With both servers running, use a temporary application to check:
-
-1. Load the list, create an application, reload and confirm it persists.
-2. Edit its status and notes; check the success message and statistics.
-3. Search by company and position, combine with each status filter, and clear filters.
-4. Compare newest, oldest and company sorting with several entries.
-5. Cancel deletion first, then confirm it; verify the entry disappears.
-6. Check the empty list and the separate no-matches state.
-7. Stop the API and reload: check the error message, restart it and choose Try again.
-8. Check desktop, tablet and mobile layouts and keyboard focus.
-9. Run `npm run build` in `client`.
-
-On Windows, use `npm.cmd` instead of `npm` if PowerShell blocks `npm.ps1`.
+To use a different backend, set `VITE_API_URL` in `client/.env` and restart Vite.
+Run `npm run build` from `client` to create the production build in `client/dist`.
